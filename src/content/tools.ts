@@ -19,3 +19,24 @@ export async function captureElement(element: HTMLElement) {
 		console.error("截图失败:", error);
 	}
 }
+
+/**
+ * 把类名数组格式化成字符串
+ * @param text 
+ */
+export function parseClassName(classList: DOMTokenList) {
+	return '.' + Array.from(classList).join('.')
+}
+
+/**
+ * 根据类名获取元素
+ * @param className 
+ * @returns 
+ */
+export function getElementByClassName(className: string) {
+	const elements = document.querySelectorAll(className);
+	if (elements.length > 0) {
+		return elements;
+	}
+	return null;
+} 

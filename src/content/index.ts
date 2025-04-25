@@ -1,26 +1,26 @@
 // 内容脚本的作用是与当前页面的 DOM 交互
-import { SimpleModal } from "./createDataElementModal";
-import { captureElement } from "./tools";
+import SimpleModal from "./SimpleModal";
+import { captureElement, getElementByClassName, parseClassName } from "./tools";
 
 let currentDataUrl: string | undefined = undefined;
 
-let myModal: SimpleModal | null = null
+let myModal: SimpleModal | null = null;
 
 function debounce(fn: (e: MouseEvent) => void, delay: number) {
-	let timer: NodeJS.Timeout | null = null; // 用于存储定时器
+  let timer: NodeJS.Timeout | null = null; // 用于存储定时器
 
-	return function (...args: [e: MouseEvent]) {
-		if (timer) {
-			clearTimeout(timer); // 如果已经有定时器，清除它
-		}
+  return function (...args: [e: MouseEvent]) {
+    if (timer) {
+      clearTimeout(timer); // 如果已经有定时器，清除它
+    }
 
-		// 设置新的定时器
-		timer = setTimeout(() => {
-			// @ts-ignore
-			fn.apply(this, args); // 执行函数
-			timer = null; // 清空定时器
-		}, delay);
-	};
+    // 设置新的定时器
+    timer = setTimeout(() => {
+      // @ts-ignore
+      fn.apply(this, args); // 执行函数
+      timer = null; // 清空定时器
+    }, delay);
+  };
 }
 
 /**
@@ -31,23 +31,23 @@ function debounce(fn: (e: MouseEvent) => void, delay: number) {
  * @param h 高度
  */
 function createBorderDom(
-	x: number,
-	y: number,
-	w: number,
-	h: number
+  x: number,
+  y: number,
+  w: number,
+  h: number
 ): HTMLDivElement {
-	const div = document.createElement("div");
-	div.className = "border-div";
-	Object.assign(div.style, {
-		position: "fixed",
-		left: `${x - 10}px`,
-		top: `${y}px`,
-		width: `${w + 10}px`,
-		height: `${h}px`,
-		border: "4px solid rgb(222, 78, 38)",
-		"z-index": 999999999,
-		"pointer-events": "none",
-		"clip-path": `polygon(
+  const div = document.createElement("div");
+  div.className = "border-div";
+  Object.assign(div.style, {
+    position: "fixed",
+    left: `${x - 10}px`,
+    top: `${y}px`,
+    width: `${w + 10}px`,
+    height: `${h}px`,
+    border: "4px solid rgb(222, 78, 38)",
+    "z-index": 999999999,
+    "pointer-events": "none",
+    "clip-path": `polygon(
             0% 0%, 
             0% 100%, 
             25% 100%, 
@@ -59,9 +59,9 @@ function createBorderDom(
             100% 100%, 
             100% 0%
           )`,
-	});
+  });
 
-	return div;
+  return div;
 }
 
 /**
@@ -70,7 +70,7 @@ function createBorderDom(
  * @returns
  */
 function createTootipDom(text: string) {
-	return `<style>
+  return `<style>
       /* 弹窗容器（居中+遮罩） */
       .my-extension-modal {
         position: fixed;
@@ -162,12 +162,12 @@ function createTootipDom(text: string) {
  * @returns
  */
 function renderTootip(flag: boolean) {
-	// 将弹窗添加到页面
-	document.body.insertAdjacentHTML(
-		"beforeend",
-		createTootipDom(flag ? "请随机选择一个将要爬取的结构" : "关闭数据爬取")
-	);
-	return document.querySelector(".my-extension-modal");
+  // 将弹窗添加到页面
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    createTootipDom(flag ? "请随机选择一个将要爬取的结构" : "关闭数据爬取")
+  );
+  return document.querySelector(".my-extension-modal");
 }
 
 /**
@@ -175,70 +175,101 @@ function renderTootip(flag: boolean) {
  * @param e
  */
 async function clickElement(e: MouseEvent) {
-	e.preventDefault();
+  e.preventDefault();
 
-	const currentUserClickEleCanvas = await captureElement(
-		e.target as HTMLElement
-	);
+  // 更改全局状态
+  changeGlobalFlag(!getGlobalFlag());
 
-	currentDataUrl = currentUserClickEleCanvas?.toDataURL();
+  // 关闭自动识别
+  stop();
 
-	myModal?.open();
+  const currentUserClickEleCanvas = await captureElement(
+    e.target as HTMLElement
+  );
 
-    myModal?.updateContent(`<img src=${currentDataUrl} >`)
+  currentDataUrl = currentUserClickEleCanvas?.toDataURL();
 
-    // 关闭自动识别
-    stop()
+  myModal?.open();
+
+  myModal?.updateContent(
+    `<img src=${currentDataUrl} style="max-width: 100%;" >`
+  );
+
+  myModal?.setOnConfirm(async () => {
+    const eleList = getElementByClassName(
+      parseClassName((e.target as HTMLElement).classList)
+    );
+
+    console.log(eleList, "eleList");
+
+    // 拿到元素之后，循环生成对应的图片，并且展示在弹窗之中
+    if (eleList?.length) {
+      const imageLisrt: string[] = [];
+
+      // 遍历元素，生成图片
+      for (let i = 0; i < eleList.length; i++) {
+        const element = eleList[i] as HTMLElement;
+        const canvas = await captureElement(element);
+        imageLisrt.push(
+          `<img src=${canvas?.toDataURL()} style="max-width: 100%;padding: 10px" >`
+        );
+      }
+
+      myModal?.updateContent("");
+
+      myModal?.updateContent(imageLisrt.join(""));
+    }
+  });
 }
 
 function removeDiv(div: HTMLElement) {
-	div.remove();
+  div.remove();
 }
 
 // 在当前停留的元素上增加监听方法，用于创建外框提示元素，和移出元素之后，清空外框的方法
 let borderArray: HTMLDivElement[] = [];
 const handlerMouseMove = debounce((e: MouseEvent) => {
-	const target = e.target as HTMLElement;
-	const { width, height, left, top } = target.getBoundingClientRect();
+  const target = e.target as HTMLElement;
+  const { width, height, left, top } = target.getBoundingClientRect();
 
-	// 创建边框元素
-	const borderDiv = createBorderDom(left, top, width, height);
+  // 创建边框元素
+  const borderDiv = createBorderDom(left, top, width, height);
 
-	// 添加边框元素
-	document.body.appendChild(borderDiv);
+  // 添加边框元素
+  document.body.appendChild(borderDiv);
 
-	// 收集边框元素
-	borderArray.push(borderDiv);
+  // 收集边框元素
+  borderArray.push(borderDiv);
 
-	// 按住 ctrl 键，允许多个元素同时存在
-	if (!e.ctrlKey) {
-		borderArray
-			.filter((item) => item !== borderDiv)
-			.forEach((item) => {
-				removeDiv(item);
-			});
-		borderArray = [borderDiv];
-	}
+  // 按住 ctrl 键，允许多个元素同时存在
+  if (!e.ctrlKey) {
+    borderArray
+      .filter((item) => item !== borderDiv)
+      .forEach((item) => {
+        removeDiv(item);
+      });
+    borderArray = [borderDiv];
+  }
 }, 200);
 
 /**
  * 开始录制
  */
 function start() {
-	chrome.runtime.sendMessage({ action: "closePlugin" });
-	document.addEventListener("mouseenter", handlerMouseMove, true);
-	document.addEventListener("click", clickElement, true); // 使用捕获阶段监听
+  chrome.runtime.sendMessage({ action: "closePlugin" });
+  document.addEventListener("mouseenter", handlerMouseMove, true);
+  document.addEventListener("click", clickElement, true); // 使用捕获阶段监听
 }
 
 /**
  * 停止录制
  */
 function stop() {
-	document.removeEventListener("mouseenter", handlerMouseMove, true);
-	document.removeEventListener("click", clickElement, true); // 移除事件监听器
-	document.querySelectorAll(".border-div").forEach((node) => {
-		node.remove();
-	});
+  document.removeEventListener("mouseenter", handlerMouseMove, true);
+  document.removeEventListener("click", clickElement, true); // 移除事件监听器
+  document.querySelectorAll(".border-div").forEach((node) => {
+    node.remove();
+  });
 }
 
 // 全局变量用于 开始/关闭 录制功能
@@ -250,70 +281,71 @@ let global_flag = false;
  * @returns
  */
 function changeGlobalFlag(flag: boolean) {
-	global_flag = flag;
-	return global_flag;
+  global_flag = flag;
+  return global_flag;
 }
 /**
  * 获取全局变量
  * @returns
  */
 function getGlobalFlag() {
-	return global_flag;
+  return global_flag;
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-	if (message.action === "start") {
-		// 将弹窗添加到页面
-		const modalDom = renderTootip(changeGlobalFlag(true));
+  if (message.action === "start") {
+    // 将弹窗添加到页面
+    const modalDom = renderTootip(changeGlobalFlag(true));
 
-		setTimeout(() => {
-			if (modalDom) removeDiv(modalDom as HTMLElement);
-			start();
-			sendResponse({ message: "已经开始录制" });
-		}, 1000);
-	}
+    setTimeout(() => {
+      if (modalDom) removeDiv(modalDom as HTMLElement);
+      start();
+      sendResponse({ message: "已经开始录制" });
+    }, 1000);
+  }
 
-	if (message.action === "stop") {
-		const modalDom = renderTootip(changeGlobalFlag(false));
+  if (message.action === "stop") {
+    const modalDom = renderTootip(changeGlobalFlag(false));
 
-		setTimeout(() => {
-			if (modalDom) removeDiv(modalDom as HTMLElement);
-			stop();
-			sendResponse({ message: "已经停止录制" });
-		}, 1000);
-	}
+    setTimeout(() => {
+      if (modalDom) removeDiv(modalDom as HTMLElement);
+      stop();
+      sendResponse({ message: "已经停止录制" });
+    }, 1000);
+  }
 
-	if (message.action === "getCurrentUserClickEle") {
-		sendResponse({ message: currentDataUrl });
-	}
+  if (message.action === "getCurrentUserClickEle") {
+    sendResponse({ message: currentDataUrl });
+  }
 });
 
 document.addEventListener("keydown", (event) => {
-	// 用户组合键 ctrl + b 切换开启录制和关闭录制
-	if (event.ctrlKey && event.key === "b") {
-		changeGlobalFlag(!getGlobalFlag());
+  // 用户组合键 ctrl + b 切换开启录制和关闭录制
+  if (event.ctrlKey && event.key === "b") {
+    changeGlobalFlag(!getGlobalFlag());
 
-		// 将弹窗添加到页面
-		const modalDom = renderTootip(getGlobalFlag());
+    // 将弹窗添加到页面
+    const modalDom = renderTootip(getGlobalFlag());
 
-		setTimeout(() => {
-			if (modalDom) removeDiv(modalDom as HTMLElement);
-			if (getGlobalFlag()) {
-				start();
-			} else {
-				stop();
-			}
-		}, 1000);
-	}
+    setTimeout(() => {
+      if (modalDom) removeDiv(modalDom as HTMLElement);
+      if (getGlobalFlag()) {
+        start();
+      } else {
+        stop();
+      }
+    }, 1000);
+  }
 });
 
 // 想要初始化的时候获取页面上的元素，必须是在onload完成之后才能获取成功
 window.onload = () => {
-	// 初始化弹窗
-	myModal = new SimpleModal({
-		title: "已识别到的区域",
-		content: "",
-		width: "800px",
-	});
-    document.body.appendChild(myModal.overlay!)
+  // 初始化弹窗
+  myModal = new SimpleModal({
+    title: "已识别到的区域",
+    content: "",
+    confirmText: "获取类似元素",
+    width: "800px",
+  });
+  document.body.appendChild(myModal.overlay!);
 };
