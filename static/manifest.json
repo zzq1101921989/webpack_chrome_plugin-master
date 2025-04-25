@@ -1,0 +1,42 @@
+{
+	"manifest_version": 3,
+	"name": "记录操作webpack",
+	"version": "1.0.1",
+	"background": {
+	  "service_worker": "background.js"  
+	},
+	"action": {
+	  "default_title": "Click to view a popup",
+	  "default_popup": "popup.html",    
+	  "default_icon": {
+		"16": "images/icon.png",        
+		"24": "images/icon.png",
+		"32": "images/icon.png"
+	  }
+	},
+	"icons": {
+	  "16": "images/icon.png",
+	  "24": "images/icon.png",
+	  "32": "images/icon.png",
+	  "48": "images/icon.png",
+	  "128": "images/icon.png"
+	},
+	"content_scripts": [
+	  {
+		"matches": ["<all_urls>"],
+		"js": ["content.js"],          
+		"run_at": "document_start"
+	  }
+	],
+	"web_accessible_resources": [
+	  {
+		"resources": ["getUserClickElement.js"],
+		"matches": ["<all_urls>"]
+	  }
+	],
+	"permissions": [
+	  "activeTab",
+	  "scripting",
+	  "tabs"
+	]
+  }
