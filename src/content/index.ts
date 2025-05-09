@@ -1,6 +1,7 @@
 // 内容脚本的作用是与当前页面的 DOM 交互
 import SimpleModal from "./SimpleModal";
 import { captureElement, getElementByClassName, parseClassName } from "./tools";
+import cssContent from "../styles/injected.raw.css";
 
 let currentDataUrl: string | undefined = undefined;
 
@@ -187,37 +188,23 @@ async function clickElement(e: MouseEvent) {
     e.target as HTMLElement
   );
 
-  currentDataUrl = currentUserClickEleCanvas?.toDataURL();
-
   myModal?.open();
 
-  myModal?.updateContent(
-    `<img src=${currentDataUrl} style="max-width: 100%;" >`
-  );
+  myModal?.updateContent(currentUserClickEleCanvas!);
 
   myModal?.setOnConfirm(async () => {
     const eleList = getElementByClassName(
       parseClassName((e.target as HTMLElement).classList)
     );
 
-    console.log(eleList, "eleList");
-
-    // 拿到元素之后，循环生成对应的图片，并且展示在弹窗之中
+    // 拿到类似的元素，并且高亮显示
     if (eleList?.length) {
-      const imageLisrt: string[] = [];
-
-      // 遍历元素，生成图片
-      for (let i = 0; i < eleList.length; i++) {
-        const element = eleList[i] as HTMLElement;
-        const canvas = await captureElement(element);
-        imageLisrt.push(
-          `<img src=${canvas?.toDataURL()} style="max-width: 100%;padding: 10px" >`
-        );
-      }
-
-      myModal?.updateContent("");
-
-      myModal?.updateContent(imageLisrt.join(""));
+      eleList.forEach((item) => {
+        item.classList.add("flash-border");
+        ( item as HTMLElement ).onanimationend = () => {
+          item.classList.remove("flash-border");
+        };
+      });
     }
   });
 }
@@ -292,6 +279,15 @@ function getGlobalFlag() {
   return global_flag;
 }
 
+/**
+ * 初始化需要注入的css，用于浏览器插件需要生成的一些样式效果
+ */
+function injected() {
+  const style = document.createElement("style");
+  style.textContent = cssContent;
+  document.head.appendChild(style);
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "start") {
     // 将弹窗添加到页面
@@ -344,8 +340,10 @@ window.onload = () => {
   myModal = new SimpleModal({
     title: "已识别到的区域",
     content: "",
-    confirmText: "获取类似元素",
+    confirmText: "查看类似元素",
     width: "800px",
   });
   document.body.appendChild(myModal.overlay!);
+
+  injected();
 };

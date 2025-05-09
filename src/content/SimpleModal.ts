@@ -115,7 +115,6 @@ export default class SimpleModal {
             padding: 20px;
             flex: 1;
             overflow-y: auto;
-            text-align: center;
         `;
 
     if (this.content && this.options.content) {
@@ -196,8 +195,8 @@ export default class SimpleModal {
   }
 
   // 更新内容的方法
-  public updateContent(newContent: string): void {
-    this.content!.innerHTML = newContent;
+  public updateContent(newContent: HTMLElement): void {
+    this.content!.replaceChildren(newContent)
   }
 
   // 更新标题的方法

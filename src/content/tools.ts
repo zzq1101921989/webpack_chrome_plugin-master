@@ -9,10 +9,7 @@ export async function captureElement(element: HTMLElement) {
 	try {
 		const canvas = await html2canvas(element, {
 			scale: 1, // 提高输出质量
-			logging: true, // 开发时查看日志
 			useCORS: true, // 处理跨域图像
-			allowTaint: true, // 允许污染画布
-			backgroundColor: "#ffffff", // 设置背景
 		});
 		return canvas
 	} catch (error) {
