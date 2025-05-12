@@ -1,59 +1,61 @@
 // SimpleModal.ts
 interface ModalOptions {
-  title?: string;
-  content?: string;
-  width?: string;
-  height?: string;
-  closeButton?: boolean;
-  confirmButton?: boolean;
-  confirmText: string;
-  onConfirm?: () => void;
+	title?: string;
+	content?: string;
+	width?: string;
+	height?: string;
+	closeButton?: boolean;
+	confirmButton?: boolean;
+	confirmText: string;
+	onConfirm?: () => void;
+	footerButton?: HTMLButtonElement[];
 }
 
 export default class SimpleModal {
-  private options: ModalOptions;
-  private modal?: HTMLDivElement;
-  private header?: HTMLDivElement;
-  private content?: HTMLDivElement;
-  private footer?: HTMLDivElement;
-  public overlay?: HTMLDivElement;
-  private closeBtn: HTMLSpanElement | null = null;
-  private confirmBtn: HTMLButtonElement | null = null;
+	private options: ModalOptions;
+	private modal?: HTMLDivElement;
+	private header?: HTMLDivElement;
+	private content?: HTMLDivElement;
+	private footer?: HTMLDivElement;
+	public overlay?: HTMLDivElement;
+	private closeBtn: HTMLSpanElement | null = null;
+	private confirmBtn: HTMLButtonElement | null = null;
 
-  constructor(options: Partial<ModalOptions> = {}) {
-    // 设置默认配置
-    this.options = {
-      title: "弹窗标题",
-      content: "弹窗内容",
-      width: "800px",
-      height: "auto",
+	constructor(options: Partial<ModalOptions> = {}) {
+		// 设置默认配置
+		this.options = {
+			title: "弹窗标题",
+			content: "弹窗内容",
+			width: "800px",
+			height: "auto",
 
-      /**
-       * 是否显示关闭按钮
-       */
-      closeButton: true,
-      
-      /**
-       * 是否显示确认按钮
-       */
-      confirmButton: true,
-      
-      confirmText: "确定",
-      ...options,
-    };
+			/**
+			 * 是否显示关闭按钮
+			 */
+			closeButton: true,
 
-    // 创建弹窗元素
-    this.createElements();
+			/**
+			 * 是否显示确认按钮
+			 */
+			confirmButton: true,
 
-    // 绑定事件
-    this.bindEvents();
-  }
+			confirmText: "确定",
+			footerButton: options.footerButton,
+			...options,
+		};
 
-  private createElements(): void {
-    // 创建遮罩层
-    this.overlay = document.createElement("div");
-    this.overlay.className = "modal-overlay";
-    this.overlay.style.cssText = `
+		// 创建弹窗元素
+		this.createElements();
+
+		// 绑定事件
+		this.bindEvents();
+	}
+
+	private createElements(): void {
+		// 创建遮罩层
+		this.overlay = document.createElement("div");
+		this.overlay.className = "modal-overlay";
+		this.overlay.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
@@ -65,12 +67,11 @@ export default class SimpleModal {
             align-items: center;
             z-index: 999;
         `;
-    document.body.appendChild(this.overlay);
 
-    // 创建弹窗容器
-    this.modal = document.createElement("div");
-    this.modal.className = "modal-container";
-    this.modal.style.cssText = `
+		// 创建弹窗容器
+		this.modal = document.createElement("div");
+		this.modal.className = "modal-container";
+		this.modal.style.cssText = `
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -83,10 +84,10 @@ export default class SimpleModal {
             overflow: hidden;
         `;
 
-    // 创建标题栏
-    this.header = document.createElement("div");
-    this.header.className = "modal-header";
-    this.header.style.cssText = `
+		// 创建标题栏
+		this.header = document.createElement("div");
+		this.header.className = "modal-header";
+		this.header.style.cssText = `
             padding: 16px;
             background-color: #3498db;
             color: white;
@@ -95,36 +96,36 @@ export default class SimpleModal {
             justify-content: space-between;
             align-items: center;
         `;
-    this.header.innerHTML = `<span>${this.options.title}</span>`;
+		this.header.innerHTML = `<span>${this.options.title}</span>`;
 
-    // 添加关闭按钮
-    if (this.options.closeButton) {
-      this.closeBtn = document.createElement("span");
-      this.closeBtn.innerHTML = "&times;";
-      this.closeBtn.style.cssText = `
+		// 添加关闭按钮
+		if (this.options.closeButton) {
+			this.closeBtn = document.createElement("span");
+			this.closeBtn.innerHTML = "&times;";
+			this.closeBtn.style.cssText = `
                 font-size: 24px;
                 cursor: pointer;
             `;
-      this.header.appendChild(this.closeBtn);
-    }
+			this.header.appendChild(this.closeBtn);
+		}
 
-    // 创建内容区域
-    this.content = document.createElement("div");
-    this.content.className = "modal-content";
-    this.content.style.cssText = `
+		// 创建内容区域
+		this.content = document.createElement("div");
+		this.content.className = "modal-content";
+		this.content.style.cssText = `
             padding: 20px;
             flex: 1;
             overflow-y: auto;
         `;
 
-    if (this.content && this.options.content) {
-      this.content.innerHTML = this.options.content;
-    }
+		if (this.content && this.options.content) {
+			this.content.innerHTML = this.options.content;
+		}
 
-    // 创建底部按钮区域
-    this.footer = document.createElement("div");
-    this.footer.className = "modal-footer";
-    this.footer.style.cssText = `
+		// 创建底部按钮区域
+		this.footer = document.createElement("div");
+		this.footer.className = "modal-footer";
+		this.footer.style.cssText = `
             padding: 16px;
             display: flex;
             justify-content: end;
@@ -132,83 +133,74 @@ export default class SimpleModal {
             border-top: 1px solid #eee;
         `;
 
-    // 添加确定按钮
-    if (this.options.confirmButton) {
-      this.confirmBtn = document.createElement("button");
-      this.confirmBtn.className = "modal-confirm-btn";
-      this.confirmBtn.textContent = this.options.confirmText;
-      this.confirmBtn.style.cssText = `
-                padding: 8px 16px;
-                background-color: #3498db;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-            `;
-      this.footer.appendChild(this.confirmBtn);
-    }
+		// 添加确定按钮
+		if (this.options.footerButton) {
+			this.options.footerButton.forEach((item) => {
+				this.footer!.appendChild(item);
+			});
+		}
 
-    // 组装弹窗
-    this.modal.appendChild(this.header);
-    this.modal.appendChild(this.content);
-    this.modal.appendChild(this.footer);
+		// 组装弹窗
+		this.modal.appendChild(this.header);
+		this.modal.appendChild(this.content);
+		this.modal.appendChild(this.footer);
 
-    // 添加到遮罩层
-    this.overlay.appendChild(this.modal);
-  }
+		// 添加到遮罩层
+		this.overlay.appendChild(this.modal);
+	}
 
-  private bindEvents(): void {
-    // 关闭按钮事件
-    if (this.options.closeButton && this.closeBtn) {
-      this.closeBtn.addEventListener("click", () => this.close());
-    }
+	private bindEvents(): void {
+		// 关闭按钮事件
+		if (this.options.closeButton && this.closeBtn) {
+			this.closeBtn.addEventListener("click", () => this.close());
+		}
 
-    // 确定按钮事件
-    if (this.options.confirmButton && this.confirmBtn) {
-      this.confirmBtn.addEventListener("click", () => {
-        this.options.onConfirm?.();
-        if (!this.options.onConfirm) this.close();
-      });
-    }
+		// 确定按钮事件
+		if (this.options.confirmButton && this.confirmBtn) {
+			this.confirmBtn.addEventListener("click", () => {
+				this.options.onConfirm?.();
+				if (!this.options.onConfirm) this.close();
+			});
+		}
 
-    // 点击遮罩层关闭
-    this.overlay?.addEventListener("click", (e) => {
-      if (e.target === this.overlay) {
-        this.close();
-      }
-    });
-  }
+		// 点击遮罩层关闭
+		this.overlay?.addEventListener("click", (e) => {
+			if (e.target === this.overlay) {
+				this.close();
+			}
+		});
+	}
 
-  public open(): void {
-    this.overlay!.style.display = "flex";
-    this.modal!.style.display = "flex";
-  }
+	public open(): void {
+		this.overlay!.style.display = "flex";
+		this.modal!.style.display = "flex";
+	}
 
-  public close(): void {
-    this.overlay!.style.display = "none";
-    this.modal!.style.display = "none";
-  }
+	public close(): void {
+		this.overlay!.style.display = "none";
+		this.modal!.style.display = "none";
+	}
 
-  public destroy(): void {
-    document.body.removeChild(this.overlay!);
-  }
+	public destroy(): void {
+		document.body.removeChild(this.overlay!);
+	}
 
-  // 更新内容的方法
-  public updateContent(newContent: HTMLElement): void {
-    this.content!.replaceChildren(newContent)
-  }
+	// 更新内容的方法
+	public updateContent(newContent: HTMLElement): void {
+		this.content!.replaceChildren(newContent);
+	}
 
-  // 更新标题的方法
-  public updateTitle(newTitle: string): void {
-    const titleSpan = this.header?.querySelector("span");
-    if (titleSpan) {
-      titleSpan.textContent = newTitle;
-    }
-  }
+	// 更新标题的方法
+	public updateTitle(newTitle: string): void {
+		const titleSpan = this.header?.querySelector("span");
+		if (titleSpan) {
+			titleSpan.textContent = newTitle;
+		}
+	}
 
-  // 设置确认回调
-  public setOnConfirm(callback: () => void): void {
-    this.options.onConfirm = callback;
-  }
+	public render() {
+		if (this.overlay) {
+			document.body.appendChild(this.overlay);
+		}
+	}
 }
